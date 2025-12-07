@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIH 2025: AYUSH-ICD Bridge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(229, 231, 235, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <!-- Navbar -->
+    <nav class="bg-blue-900 text-white p-4 shadow-lg">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-heartbeat text-2xl text-blue-300"></i>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">AYUSH-ICD Bridge</h1>
+                    <p class="text-xs text-blue-200">SIH 2024 • Terminology Server</p>
+                </div>
+            </div>
+            <div class="hidden md:flex space-x-6 text-sm font-semibold">
+                <span class="text-green-400"><i class="fas fa-check-circle"></i> Server Online</span>
+                <span class="text-blue-300"><i class="fas fa-link"></i> WHO API Connected</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto mt-12 p-4">
+        
+        <!-- Search Section -->
+        <div class="text-center mb-10">
+            <h2 class="text-3xl font-bold text-slate-800 mb-2">INTEGRATED TERMINOLOGY SEARCH</h2>
+            <p class="text-slate-500 mb-6">Enter an Ayurveda, Unani, or Siddha symptom to map it to ICD-11.</p>
+            
+            <div class="relative max-w-xl mx-auto">
+                <input type="text" id="searchInput" 
+                    class="w-full p-4 pl-12 rounded-full border-2 border-blue-100 shadow-sm focus:border-blue-500 focus:outline-none transition-all text-lg"
+                    placeholder="Try 'Kasa', 'Jwara', or 'Nazla'..."
+                    onkeypress="if(event.key === 'Enter') searchSymptom()">
+                <i class="fas fa-search absolute left-5 top-5 text-slate-400"></i>
+                <button onclick="searchSymptom()" 
+                    class="absolute right-2 top-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-semibold transition-colors">
+                    Search
+                </button>
+            </div>
+            <p id="loadingMsg" class="hidden mt-4 text-blue-600 font-medium animate-pulse">
+                <i class="fas fa-spinner fa-spin"></i> Consulting Knowledge Base...
+            </p>
+            <p id="errorMsg" class="hidden mt-4 text-red-500 font-medium"></p>
+        </div>
+
+        <!-- Results Area -->
+        <div id="resultsArea" class="hidden fade-in">
+            
+            <!-- 1. The Bridge Visualizer -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                
+                <!-- Source (Ayurveda/Unani/Siddha) -->
+                <div class="glass-card p-6 rounded-xl shadow-sm border-l-4 border-orange-500 bg-orange-50/50 flex flex-col justify-between">
+                    <div>
+                        <div class="text-orange-600 text-xs font-bold uppercase tracking-wider mb-2">Source Term</div>
+                        <h3 id="resAyushTerm" class="text-2xl font-bold text-slate-800">...</h3>
+                        <p id="resSystem" class="text-sm text-slate-500 mt-1 italic">Ayurveda</p>
+                        
+                        <!-- Source Description -->
+                        <div class="mt-3 p-3 bg-white/60 rounded text-xs text-slate-600 border border-orange-100">
+                            <strong>Definition:</strong>
+                            <p id="resAyushDesc" class="mt-1 italic leading-relaxed">...</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 inline-block bg-orange-200 text-orange-800 text-xs px-2 py-1 rounded w-max">
+                        Code: <span id="resAyushCode" class="font-mono font-bold">...</span>
+                    </div>
+                </div>
+
+                <!-- Arrow -->
+                <div class="flex flex-col items-center justify-center text-slate-300">
+                    <i class="fas fa-arrow-right text-4xl hidden md:block"></i>
+                    <i class="fas fa-arrow-down text-4xl md:hidden"></i>
+                    <div class="mt-2 text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+                        MAPPING
+                    </div>
+                </div>
+
+                <!-- Destination (ICD-11) -->
+                <div class="glass-card p-6 rounded-xl shadow-sm border-l-4 border-blue-500 bg-blue-50/50 flex flex-col justify-between">
+                    <div>
+                        <div class="text-blue-600 text-xs font-bold uppercase tracking-wider mb-2">ICD-11 Mapping</div>
+                        <h3 id="resIcdTerm" class="text-2xl font-bold text-slate-800">...</h3>
+                        <p class="text-sm text-slate-500 mt-1">WHO International Standard</p>
+                        
+                        <!-- ICD Description -->
+                        <div class="mt-3 p-3 bg-white/60 rounded text-xs text-slate-600 border border-blue-100">
+                            <strong>Definition:</strong>
+                            <p id="resIcdDesc" class="mt-1 italic leading-relaxed">...</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 flex items-center space-x-2">
+                        <span class="bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                            Code: <span id="resIcdCode" class="font-mono font-bold">...</span>
+                        </span>
+                        <a id="resIcdLink" href="#" target="_blank" class="text-xs text-blue-500 hover:underline">
+                            View on WHO <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Technical FHIR Output -->
+            <div class="glass-card rounded-xl shadow-sm overflow-hidden">
+                <div class="bg-slate-100 px-6 py-3 border-b border-slate-200 flex justify-between items-center">
+                    <h4 class="font-mono text-xs font-bold text-slate-500">
+                        <i class="fas fa-code"></i> FHIR JSON RESPONSE (EHR STANDARD)
+                    </h4>
+                    <button onclick="copyJson()" class="text-xs text-blue-500 hover:text-blue-700">
+                        <i class="far fa-copy"></i> Copy
+                    </button>
+                </div>
+                <pre id="jsonOutput" class="p-6 overflow-x-auto text-xs font-mono text-slate-600 bg-slate-50"></pre>
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer class="text-center text-slate-400 text-sm py-8 mt-auto">
+        <p>© 2025 Smart India Hackathon Team • Powered by WHO ICD-11 API & NAMASTE Portal</p>
+    </footer>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000";
+
+        async function searchSymptom() {
+            const query = document.getElementById('searchInput').value;
+            if (!query) return;
+
+            // UI Reset
+            document.getElementById('loadingMsg').classList.remove('hidden');
+            document.getElementById('resultsArea').classList.add('hidden');
+            document.getElementById('errorMsg').classList.add('hidden');
+
+            try {
+                const response = await fetch(`${API_URL}/search?query=${query}`);
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.detail || "Server Error");
+                }
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                showError(error.message.includes("fetch") ? "Server offline. Run server.py" : error.message);
+            } finally {
+                document.getElementById('loadingMsg').classList.add('hidden');
+            }
+        }
+
+        function displayResults(data) {
+            const coding = data.code.coding;
+            const ayush = coding[0];
+            const icd = coding[1];
+
+            // 1. Update Ayush Card
+            document.getElementById('resAyushTerm').innerText = ayush.display || "Unknown";
+            document.getElementById('resAyushCode').innerText = ayush.code || "N/A";
+            document.getElementById('resSystem').innerText = ayush.system || "Ayush";
+            
+            const ayushDesc = ayush.definition || "No definition available.";
+            document.getElementById('resAyushDesc').innerText = ayushDesc.length > 200 ? ayushDesc.substring(0, 200) + "..." : ayushDesc;
+
+            // 2. Update ICD Card
+            document.getElementById('resIcdTerm').innerText = icd.display || "No Mapping";
+            document.getElementById('resIcdCode').innerText = icd.code || "N/A";
+            
+            const icdDesc = icd.definition || "No definition available.";
+            document.getElementById('resIcdDesc').innerText = icdDesc.length > 200 ? icdDesc.substring(0, 200) + "..." : icdDesc;
+            
+            const linkElem = document.getElementById('resIcdLink');
+            if (icd.uri && icd.uri.startsWith("http")) {
+                linkElem.href = `https://icd.who.int/browse11/l-m/en#/${encodeURIComponent(icd.uri)}`;
+                linkElem.classList.remove('hidden');
+            } else {
+                linkElem.classList.add('hidden');
+            }
+
+            // 3. Update Raw JSON
+            document.getElementById('jsonOutput').innerText = JSON.stringify(data, null, 2);
+            document.getElementById('resultsArea').classList.remove('hidden');
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.innerText = `⚠️ ${msg}`;
+            el.classList.remove('hidden');
+        }
+
+        function copyJson() {
+            const text = document.getElementById('jsonOutput').innerText;
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => alert("JSON copied!"));
+            } else {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try { document.execCommand('copy'); alert("JSON copied!"); } catch (e) {}
+                document.body.removeChild(textArea);
+            }
+        }
+    </script>
+</body>
+</html>
